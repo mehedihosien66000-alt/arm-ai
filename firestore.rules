@@ -1,0 +1,340 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'mehedihosien66000@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'name', 'email', 'plan', 'dailyRequestsUsed',
+          'dailyUsageDate', 'totalRequests', 'totalTokens', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'name', 'displayName', 'email', 'photoUrl', 'photoURL',
+          'emailVerified', 'accountStatus', 'plan', 'dailyRequestsUsed',
+          'dailyUsageDate', 'totalRequests', 'totalTokens', 'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120))
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 500))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && (!('emailVerified' in data) || data.emailVerified is bool)
+        && (!('accountStatus' in data) || (data.accountStatus is string && data.accountStatus in ['active', 'suspended']))
+        && data.plan is string && data.plan in ['free', 'pro', 'premium']
+        && data.dailyRequestsUsed is number && data.dailyRequestsUsed >= 0 && data.dailyRequestsUsed <= 100000
+        && data.dailyUsageDate is string && data.dailyUsageDate.size() == 10 && data.dailyUsageDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.totalRequests is number && data.totalRequests >= 0
+        && data.totalTokens is number && data.totalTokens >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidConversation(data, convId) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'pinned', 'mode', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'title', 'pinned', 'mode', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == convId && isValidId(data.id)
+        && data.userId is string && isValidId(data.userId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.pinned is bool
+        && data.mode is string && data.mode in ['assistant', 'coding', 'research']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMessage(data, convId, msgId) {
+      return data.keys().hasAll(['id', 'conversationId', 'userId', 'role', 'content', 'mode', 'isError', 'createdAt'])
+        && data.keys().hasOnly([
+          'id', 'conversationId', 'userId', 'role', 'content', 'mode',
+          'isError', 'groundingNotice', 'attachmentNames', 'sourceEntries', 'tokenUsage', 'createdAt'
+        ])
+        && data.id is string && data.id == msgId && isValidId(data.id)
+        && data.conversationId is string && data.conversationId == convId && isValidId(data.conversationId)
+        && data.userId is string && isValidId(data.userId)
+        && data.role is string && data.role in ['user', 'assistant']
+        && data.content is string && data.content.size() <= 100000
+        && data.mode is string && data.mode in ['assistant', 'coding', 'research']
+        && data.isError is bool
+        && (!('groundingNotice' in data) || (data.groundingNotice is string && data.groundingNotice.size() <= 500))
+        && (!('attachmentNames' in data) || (data.attachmentNames is list && data.attachmentNames.size() <= 4 && (data.attachmentNames.size() == 0 || data.attachmentNames[0] is string)))
+        && (!('sourceEntries' in data) || (data.sourceEntries is list && data.sourceEntries.size() <= 12 && (data.sourceEntries.size() == 0 || data.sourceEntries[0] is string)))
+        && (!('tokenUsage' in data) || (data.tokenUsage is number && data.tokenUsage >= 0))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMemory(data, memId) {
+      return data.keys().hasAll(['id', 'userId', 'content', 'category', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'content', 'category', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == memId && isValidId(data.id)
+        && data.userId is string && isValidId(data.userId)
+        && data.content is string && data.content.size() >= 1 && data.content.size() <= 600
+        && data.category is string && data.category in ['preference', 'instruction', 'context']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserSettings(data, userId) {
+      return data.keys().hasAll([
+          'userId', 'language', 'responseDepth', 'webSearchEnabled',
+          'voiceEnabled', 'voiceConversationMode', 'memoryEnabled', 'customInstructions', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'language', 'responseDepth', 'webSearchEnabled',
+          'voiceEnabled', 'voiceConversationMode', 'memoryEnabled', 'customInstructions',
+          'theme', 'createdAt', 'updatedAt'
+        ])
+        && data.userId is string && data.userId == userId && isValidId(data.userId)
+        && data.language is string && data.language in ['auto', 'bn', 'en', 'hi']
+        && data.responseDepth is string && data.responseDepth in ['fast', 'balanced', 'deep']
+        && data.webSearchEnabled is bool
+        && data.voiceEnabled is bool
+        && data.voiceConversationMode is bool
+        && data.memoryEnabled is bool
+        && data.customInstructions is string && data.customInstructions.size() <= 1200
+        && (!('theme' in data) || (data.theme is string && data.theme in ['dark-obsidian']))
+        && (!('createdAt' in data) || data.createdAt is timestamp)
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPlatformConfig(data) {
+      return data.keys().hasAll([
+          'dailyRequestLimit', 'voiceEnabled', 'visionEnabled', 'memoryEnabled',
+          'documentsEnabled', 'codingModeEnabled', 'researchModeEnabled', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'dailyRequestLimit', 'voiceEnabled', 'visionEnabled', 'memoryEnabled',
+          'documentsEnabled', 'codingModeEnabled', 'researchModeEnabled', 'updatedAt'
+        ])
+        && data.dailyRequestLimit is number && data.dailyRequestLimit >= 1 && data.dailyRequestLimit <= 100000
+        && data.voiceEnabled is bool
+        && data.visionEnabled is bool
+        && data.memoryEnabled is bool
+        && data.documentsEnabled is bool
+        && data.codingModeEnabled is bool
+        && data.researchModeEnabled is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidApiError(data, errorId) {
+      return data.keys().hasAll(['id', 'userId', 'route', 'statusCode', 'message', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'route', 'statusCode', 'message', 'createdAt'])
+        && data.id is string && data.id == errorId && isValidId(data.id)
+        && data.userId is string && isValidId(data.userId)
+        && data.route is string && data.route.size() >= 1 && data.route.size() <= 120
+        && data.statusCode is number && data.statusCode >= 100 && data.statusCode <= 599
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUsageLog(data, logId) {
+      return data.keys().hasAll(['logId', 'userId', 'requestType', 'timestamp', 'usageMetadata'])
+        && data.keys().hasOnly(['logId', 'userId', 'requestType', 'timestamp', 'usageMetadata'])
+        && data.logId is string && data.logId == logId && isValidId(data.logId)
+        && data.userId is string && isValidId(data.userId)
+        && data.requestType is string && data.requestType in ['assistant', 'coding', 'research']
+        && data.timestamp is timestamp
+        && data.usageMetadata is map
+        && data.usageMetadata.keys().hasOnly(['promptTokens', 'candidatesTokens', 'totalTokens']);
+    }
+
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list, write: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().plan == 'free'
+        && (!('accountStatus' in incoming()) || incoming().accountStatus == 'active')
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isVerifiedOwner(userId)
+            && incoming().plan == existing().plan
+            && (!('accountStatus' in existing()) || incoming().accountStatus == existing().accountStatus)
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'displayName', 'photoUrl', 'photoURL', 'emailVerified',
+              'dailyRequestsUsed', 'dailyUsageDate', 'totalRequests', 'totalTokens', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(userId) && isOwner(userId);
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if isValidId(conversationId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(conversationId)
+        && isVerified()
+        && isValidConversation(incoming(), conversationId)
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(conversationId)
+        && isVerified()
+        && isValidConversation(incoming(), conversationId)
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'pinned', 'mode', 'updatedAt']);
+      allow delete: if isValidId(conversationId) && isSignedIn() && existing().userId == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow get: if isValidId(conversationId) && isValidId(messageId) && isSignedIn()
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
+        allow list: if isValidId(conversationId) && isSignedIn()
+          && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(conversationId) && isValidId(messageId)
+          && isVerified()
+          && isValidMessage(incoming(), conversationId, messageId)
+          && incoming().userId == request.auth.uid
+          && incoming().createdAt == request.time
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
+        allow update: if isValidId(conversationId) && isValidId(messageId)
+          && isVerified()
+          && isValidMessage(incoming(), conversationId, messageId)
+          && existing().userId == request.auth.uid
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().conversationId == existing().conversationId
+          && incoming().createdAt == existing().createdAt
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'content', 'isError', 'groundingNotice', 'sourceEntries', 'tokenUsage'
+          ]);
+        allow delete: if isValidId(conversationId) && isValidId(messageId)
+          && isSignedIn()
+          && existing().userId == request.auth.uid
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
+      }
+    }
+
+    match /userMemories/{memoryId} {
+      allow get: if isValidId(memoryId) && isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(memoryId)
+        && isVerified()
+        && isValidMemory(incoming(), memoryId)
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(memoryId)
+        && isVerified()
+        && isValidMemory(incoming(), memoryId)
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'category', 'updatedAt']);
+      allow delete: if isValidId(memoryId) && isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /userSettings/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserSettings(incoming(), userId)
+        && (!('createdAt' in incoming()) || incoming().createdAt == request.time)
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserSettings(incoming(), userId)
+        && incoming().userId == existing().userId
+        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'language', 'responseDepth', 'webSearchEnabled', 'voiceEnabled',
+          'voiceConversationMode', 'memoryEnabled', 'customInstructions', 'theme', 'updatedAt'
+        ]);
+      allow delete: if isValidId(userId) && isOwner(userId);
+    }
+
+    match /platformConfig/{configId} {
+      allow get: if configId == 'global';
+      allow list: if false;
+      allow create, update: if configId == 'global'
+        && isAdmin()
+        && isValidPlatformConfig(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /apiErrors/{errorId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(errorId)
+        && isVerified()
+        && isValidApiError(incoming(), errorId)
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /usage_logs/{logId} {
+      allow get: if isValidId(logId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(logId)
+        && isVerified()
+        && isValidUsageLog(incoming(), logId)
+        && incoming().userId == request.auth.uid
+        && incoming().timestamp == request.time;
+      allow update, delete: if false;
+    }
+
+    match /email_verification_otps/{otpId} {
+      allow read, write: if false;
+    }
+  }
+}

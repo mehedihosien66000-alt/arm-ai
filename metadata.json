@@ -1,0 +1,6 @@
+{
+  "name": "ARM AI",
+  "description": "ARM AI — Intelligent personal assistant supporting English, Bengali (বাংলা), and Hindi (हिन्दी), powered by MEHEDI AI and Google Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

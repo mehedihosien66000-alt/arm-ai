@@ -1,0 +1,478 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user account metadata, plan tier, and usage counters.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "emailVerified": {
+          "type": "boolean"
+        },
+        "accountStatus": {
+          "type": "string",
+          "enum": ["active", "suspended"]
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "pro", "premium"]
+        },
+        "dailyRequestsUsed": {
+          "type": "number"
+        },
+        "dailyUsageDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10
+        },
+        "totalRequests": {
+          "type": "number"
+        },
+        "totalTokens": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "name",
+        "email",
+        "plan",
+        "dailyRequestsUsed",
+        "dailyUsageDate",
+        "totalRequests",
+        "totalTokens",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A user-owned ARM AI conversation thread.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "pinned": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["assistant", "coding", "research"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "title", "pinned", "mode", "createdAt", "updatedAt"]
+    },
+    "ChatMessageRecord": {
+      "title": "ChatMessageRecord",
+      "description": "A message inside a user-owned conversation.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "conversationId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant"]
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["assistant", "coding", "research"]
+        },
+        "isError": {
+          "type": "boolean"
+        },
+        "groundingNotice": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "attachmentNames": {
+          "type": "array"
+        },
+        "sourceEntries": {
+          "type": "array"
+        },
+        "tokenUsage": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "conversationId", "userId", "role", "content", "mode", "isError", "createdAt"]
+    },
+    "UserMemory": {
+      "title": "UserMemory",
+      "description": "User-approved long-term personal memory item.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "category": {
+          "type": "string",
+          "enum": ["preference", "instruction", "context"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "content", "category", "createdAt", "updatedAt"]
+    },
+    "UserSettingsRecord": {
+      "title": "UserSettingsRecord",
+      "description": "Per-user AI assistant preferences.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "language": {
+          "type": "string",
+          "enum": ["auto", "bn", "en", "hi"]
+        },
+        "responseDepth": {
+          "type": "string",
+          "enum": ["fast", "balanced", "deep"]
+        },
+        "webSearchEnabled": {
+          "type": "boolean"
+        },
+        "voiceEnabled": {
+          "type": "boolean"
+        },
+        "voiceConversationMode": {
+          "type": "boolean"
+        },
+        "memoryEnabled": {
+          "type": "boolean"
+        },
+        "customInstructions": {
+          "type": "string",
+          "maxLength": 1200
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark-obsidian"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "language",
+        "responseDepth",
+        "webSearchEnabled",
+        "voiceEnabled",
+        "voiceConversationMode",
+        "memoryEnabled",
+        "customInstructions",
+        "updatedAt"
+      ]
+    },
+    "PlatformConfig": {
+      "title": "PlatformConfig",
+      "description": "Administrator-controlled feature flags and daily usage limits.",
+      "type": "object",
+      "properties": {
+        "dailyRequestLimit": {
+          "type": "number"
+        },
+        "voiceEnabled": {
+          "type": "boolean"
+        },
+        "visionEnabled": {
+          "type": "boolean"
+        },
+        "memoryEnabled": {
+          "type": "boolean"
+        },
+        "documentsEnabled": {
+          "type": "boolean"
+        },
+        "codingModeEnabled": {
+          "type": "boolean"
+        },
+        "researchModeEnabled": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "dailyRequestLimit",
+        "voiceEnabled",
+        "visionEnabled",
+        "memoryEnabled",
+        "documentsEnabled",
+        "codingModeEnabled",
+        "researchModeEnabled",
+        "updatedAt"
+      ]
+    },
+    "ApiErrorLog": {
+      "title": "ApiErrorLog",
+      "description": "Operational API error log for admin diagnostics.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "route": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "statusCode": {
+          "type": "number"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "route", "statusCode", "message", "createdAt"]
+    },
+    "UsageLog": {
+      "title": "UsageLog",
+      "description": "Append-only per-request AI usage log for auditability and quota enforcement.",
+      "type": "object",
+      "properties": {
+        "logId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "requestType": {
+          "type": "string",
+          "enum": ["assistant", "coding", "research"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "usageMetadata": {
+          "type": "object"
+        }
+      },
+      "required": ["logId", "userId", "requestType", "timestamp", "usageMetadata"]
+    },
+    "EmailVerificationOtp": {
+      "title": "EmailVerificationOtp",
+      "description": "Server-only hashed 6-digit email OTP verification record managed exclusively via Firebase Admin SDK.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "otpHash": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 128
+        },
+        "expiresAt": {
+          "type": "number"
+        },
+        "attempts": {
+          "type": "number"
+        },
+        "resendAvailableAt": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "otpHash",
+        "expiresAt",
+        "attempts",
+        "resendAvailableAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile, plan tier, and usage statistics."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "User-owned conversation threads."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessageRecord" },
+      "description": "Messages belonging to a user-owned conversation."
+    },
+    "/userMemories/{memoryId}": {
+      "schema": { "$ref": "#/entities/UserMemory" },
+      "description": "User-approved personal memory records."
+    },
+    "/userSettings/{userId}": {
+      "schema": { "$ref": "#/entities/UserSettingsRecord" },
+      "description": "Per-user AI assistant preferences."
+    },
+    "/platformConfig/{configId}": {
+      "schema": { "$ref": "#/entities/PlatformConfig" },
+      "description": "Global administrator feature controls and daily request limits."
+    },
+    "/apiErrors/{errorId}": {
+      "schema": { "$ref": "#/entities/ApiErrorLog" },
+      "description": "API error logs restricted to administrators for monitoring."
+    },
+    "/usage_logs/{logId}": {
+      "schema": { "$ref": "#/entities/UsageLog" },
+      "description": "Immutable append-only AI request usage logs."
+    },
+    "/email_verification_otps/{otpId}": {
+      "schema": { "$ref": "#/entities/EmailVerificationOtp" },
+      "description": "Server-only hashed OTP verification documents inaccessible to client SDKs."
+    }
+  }
+}

@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Bengali", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  --arm-bg-main: #000000;
+  --arm-bg-chat: #000000;
+  --arm-bg-sidebar: #050505;
+  --arm-bg-input: #111111;
+  --arm-bg-bubble: #171717;
+  --arm-bg-button: #1f1f1f;
+  --arm-bg-button-hover: #2a2a2a;
+  --arm-border: #292929;
+  --arm-text-primary: #ffffff;
+  --arm-text-secondary: #a0a0a0;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    background-color: var(--arm-bg-main);
+    color: var(--arm-text-primary);
+    font-family: var(--font-sans);
+  }
+}
+
+/* Minimal pure-black scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #292929;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}
+
+@keyframes typingBar {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.typing-dot-1 {
+  animation: typingBar 1.1s ease-in-out infinite;
+}
+.typing-dot-2 {
+  animation: typingBar 1.1s ease-in-out 0.16s infinite;
+}
+.typing-dot-3 {
+  animation: typingBar 1.1s ease-in-out 0.32s infinite;
+}
+
+@keyframes voiceWave {
+  0%, 100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.voice-bar-1 {
+  animation: voiceWave 0.75s ease-in-out infinite;
+}
+.voice-bar-2 {
+  animation: voiceWave 0.75s ease-in-out 0.15s infinite;
+}
+.voice-bar-3 {
+  animation: voiceWave 0.75s ease-in-out 0.3s infinite;
+}
+.voice-bar-4 {
+  animation: voiceWave 0.75s ease-in-out 0.45s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dot-1,
+  .typing-dot-2,
+  .typing-dot-3,
+  .voice-bar-1,
+  .voice-bar-2,
+  .voice-bar-3,
+  .voice-bar-4 {
+    animation: none;
+    opacity: 0.8;
+  }
+}
